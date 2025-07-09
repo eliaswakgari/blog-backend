@@ -1,0 +1,391 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Blog Application API",
+    "version": "1.0.0",
+    "description": "API documentation for the Blog Application backend."
+  },
+  "servers": [
+    { "url": "http://localhost:5000" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "token",
+        "description": "JWT token stored in httpOnly cookie named 'token'"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string", "enum": ["reader", "writer", "admin"] },
+          "bio": { "type": "string" },
+          "avatar": { "type": "string" },
+          "isBanned": { "type": "boolean" },
+          "bookmarks": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "Blog": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "title": { "type": "string" },
+          "slug": { "type": "string" },
+          "content": { "type": "string" },
+          "author": { "$ref": "#/components/schemas/User" },
+          "image": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "category": { "type": "string" },
+          "status": { "type": "string", "enum": ["draft", "published"] },
+          "likes": { "type": "array", "items": { "type": "string" } },
+          "comments": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "content": { "type": "string" },
+          "edited": { "type": "boolean" },
+          "author": { "$ref": "#/components/schemas/User" },
+          "blog": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [{ "cookieAuth": [] }],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string", "enum": ["reader", "writer", "admin"] }
+                },
+                "required": ["username", "email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User registered" },
+          "400": { "description": "Error" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login and get JWT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "JWT token" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Get current user info",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "User info", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "summary": "Update profile",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "email": { "type": "string" },
+                  "bio": { "type": "string" },
+                  "avatar": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated user" },
+          "400": { "description": "Error" }
+        }
+      }
+    },
+    "/api/blogs": {
+      "get": {
+        "summary": "List blogs with filters & pagination",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "tag", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "author", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of blogs" }
+        }
+      },
+      "post": {
+        "summary": "Create blog post",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "content": { "type": "string" },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "category": { "type": "string" },
+                  "status": { "type": "string", "enum": ["draft", "published"] },
+                  "slug": { "type": "string" },
+                  "image": { "type": "string", "format": "binary" }
+                },
+                "required": ["title", "content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created blog" },
+          "400": { "description": "Error" }
+        }
+      }
+    },
+    "/api/blogs/{slug}": {
+      "get": {
+        "summary": "Get blog by slug",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Blog object" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/api/blogs/{id}": {
+      "put": {
+        "summary": "Update blog",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Blog" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated blog" },
+          "400": { "description": "Error" }
+        }
+      },
+      "delete": {
+        "summary": "Delete blog",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Deleted" },
+          "403": { "description": "Not authorized" }
+        }
+      }
+    },
+    "/api/blogs/{id}/like": {
+      "post": {
+        "summary": "Like/unlike blog",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Likes count" }
+        }
+      }
+    },
+    "/api/blogs/{id}/bookmark": {
+      "post": {
+        "summary": "Bookmark/unbookmark blog",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Bookmarks array" }
+        }
+      }
+    },
+    "/api/comments": {
+      "get": {
+        "summary": "List comments for a blog",
+        "parameters": [
+          { "name": "blogId", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of comments" }
+        }
+      },
+      "post": {
+        "summary": "Add comment",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "blogId": { "type": "string" }
+                },
+                "required": ["content", "blogId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created comment" },
+          "400": { "description": "Error" }
+        }
+      }
+    },
+    "/api/comments/{id}": {
+      "put": {
+        "summary": "Edit comment",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" }
+                },
+                "required": ["content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated comment" },
+          "400": { "description": "Error" }
+        }
+      },
+      "delete": {
+        "summary": "Delete comment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Deleted" },
+          "403": { "description": "Not authorized" }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "summary": "List all users (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of users" }
+        }
+      }
+    },
+    "/api/admin/users/{id}/role": {
+      "patch": {
+        "summary": "Change user role (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": { "type": "string", "enum": ["reader", "writer", "admin"] }
+                },
+                "required": ["role"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated user" },
+          "400": { "description": "Error" }
+        }
+      }
+    },
+    "/api/admin/users/{id}/ban": {
+      "patch": {
+        "summary": "Ban/unban user (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Ban/unban message" },
+          "400": { "description": "Error" }
+        }
+      }
+    },
+    "/api/admin/analytics": {
+      "get": {
+        "summary": "Get analytics (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Analytics data" }
+        }
+      }
+    }
+  }
+}
