@@ -1,12 +1,31 @@
+const Blog = require("../models/Blog");
 const Comment = require("../models/Comment");
-
-
 exports.createComment = async (req, res) => {
   try {
-    const { content, blogId } = req.body;
-    const comment = new Comment({ content, blog: blogId, author: req.user.id });
+    const { blogId } = req.params;
+    const { content } = req.body;
+
+    // Create and save the comment
+    const comment = new Comment({
+      content,
+      blog: blogId,
+      author: req.user.id,
+    });
     await comment.save();
-    res.status(201).json({comment:comment,message:"Comment created successfully"});
+
+    // Push comment into blog.comments array
+    const blog = await Blog.findById(blogId);
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    blog.comments.push(comment._id);
+    await blog.save();
+
+    res.status(201).json({
+      comment,
+      message: "Comment created and added to blog successfully",
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

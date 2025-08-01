@@ -18,6 +18,6 @@ router.post("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 router.get("/me", authMiddleware, getMe);
-router.put("/me", authMiddleware, updateProfile);
+router.put("/me", authMiddleware, updateProfile);//check it later to update role and isBanned field
 
 module.exports = router;

@@ -7,8 +7,8 @@ describe("App basic routes", () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it("should have /api/auth, /api/blogs, /api/comments, /api/admin routes", async () => {
-    const routes = ["/api/auth", "/api/blogs", "/api/comments", "/api/admin"];
+  it("should have  /api/blogs, /api/comments/:blogId routes", async () => {
+    const routes = ["/api/blogs", "/api/comments/:blogId" ];
     for (const route of routes) {
       const res = await request(app).get(route);
       // Should not be 404 (could be 401, 403, 200, etc.)

@@ -28,6 +28,9 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/blogs", require("./routes/blogRoutes"));
 app.use("/api/comments", require("./routes/commentRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.get('/', (req, res) => {
+  res.send('Welcome to the Blog Backend API!');
+});
 
 // Error middleware
 const errorMiddleware = require("./middlewares/errorMiddleware");

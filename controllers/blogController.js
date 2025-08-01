@@ -11,7 +11,8 @@ exports.createBlog = async (req, res) => {
       content,
       author: req.user.id,
       image: req.file?.filename,
-      tags,
+      //make tags in request body an array at where commas are used to separate them
+      tags: Array.isArray(tags) ? tags : tags.split(",").map(tag => tag.trim()),
       category,
       status: status || "draft",
     });
@@ -21,7 +22,26 @@ exports.createBlog = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+// add controller of router.get("/:slug", blogController.getBlog);
+exports.getBlog = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const blog = await Blog.findOne({ slug })
+      .populate("author", "username email")
+      .populate("comments.author", "username");
 
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    res.status(200).json(blog);
+  } catch (error) {
+    console.error("Error fetching blog by slug:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+    
 exports.getBlogs = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, tag, category, author } = req.query;
@@ -44,16 +64,39 @@ exports.getBlogs = async (req, res) => {
   }
 };
 
-exports.getBlog = async (req, res) => {
+exports.getBlogs = async (req, res) => {
   try {
-    const blog = await Blog.findOne({ slug: req.params.slug })
+    const { page = 1, limit = 10, search, tag, category, author } = req.query;
+
+    const currentPage = Number(page);
+    const perPage = Number(limit);
+
+    const query = {};
+    if (search) query.title = { $regex: search, $options: "i" };
+    if (tag) query.tags = tag;
+    if (category) query.category = category;
+    if (author) query.author = author;
+    query.status = "published";
+
+    const total = await Blog.countDocuments(query);
+    const totalPages = Math.ceil(total / perPage);
+
+    const blogs = await Blog.find(query)
       .populate("author", "username")
-      .populate({
-        path: "comments",
-        populate: { path: "author", select: "username" },
-      });
-    if (!blog) return res.status(404).json({ error: "Blog not found" });
-    res.json(blog);
+      .populate("comments")
+      .sort({ createdAt: -1 })
+      .skip((currentPage - 1) * perPage)
+      .limit(perPage);
+
+    res.json({
+      blogs,
+      total,
+      currentPage,
+      totalPages,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1,
+    });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

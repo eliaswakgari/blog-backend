@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, default: "reader" },
+  bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Blog" }],
   isBanned: { type: Boolean, default: false },
   resetPasswordToken: String,
   resetPasswordExpire: Date,

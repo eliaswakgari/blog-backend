@@ -4,7 +4,7 @@ const blogController = require("../controllers/blogController");
 const auth = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
 
-router.get("/", blogController.getBlogs);
+router.get("/", blogController.getBlogs);//check it later
 router.get("/:slug", blogController.getBlog);
 router.post("/", auth, upload.single("image"), blogController.createBlog);
 router.put("/:id", auth, blogController.updateBlog);
